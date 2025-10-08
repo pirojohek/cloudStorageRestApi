@@ -12,4 +12,6 @@ public interface ResourceService {
     void deleteResource(String path) throws Exception;
 
     List<ResponseFileDTO> uploadFiles(String path, MultipartFile[] files);
+
+    void downloadResource(String path);
 }

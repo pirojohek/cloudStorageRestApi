@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 @Slf4j
@@ -28,6 +29,13 @@ public class ResourceRestController {
     @DeleteMapping
     public void deleteResource(@RequestParam("path") String path) throws Exception {
 
+    }
+
+    @GetMapping("/download")
+    public void downloadResource(@RequestParam(name="path", required=false) String path) {
+        try{
+
+        }catch (FileNotFoundException exception)
     }
 
     @PostMapping
