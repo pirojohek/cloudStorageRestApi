@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:55123/cloud-storage
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  web:
+    resources:
+      add-mappings: false
+
+
+minio:
+  url: http://localhost:9100
+  access-key: myuser
+  secret-key: mypassword
+  bucket: user-files

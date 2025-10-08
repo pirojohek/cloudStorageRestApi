@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9100:9000"   # 9100 на хосте → 9000 в контейнере
+      - "9101:9001"   # 9101 на хосте → 9001 в контейнере
+    environment:
+      MINIO_ROOT_USER: myuser
+      MINIO_ROOT_PASSWORD: mypassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  minio-data:
+
+
