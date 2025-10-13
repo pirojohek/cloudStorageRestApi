@@ -35,9 +35,6 @@ import java.util.Map;
 public class AuthRestController {
 
     private final AuthService authService;
-
-    private final MinioClient minioClient;
-
     private final AuthenticationManager authenticationManager;
 
     @PostMapping("/sign-up")
@@ -54,13 +51,12 @@ public class AuthRestController {
         authService.signUp(user.username(), user.password());
         authenticateAndSetSession(user.username(), user.password(),  request);
 
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("username", user.username()));
     }
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> signIn(@Valid @RequestBody UserSignInDTO user, HttpServletRequest request,
+    public ResponseEntity<Void> signIn(@Valid @RequestBody UserSignInDTO user, HttpServletRequest request,
                                     BindingResult bindingResult) throws BindException {
 
         if (bindingResult.hasErrors()) {
@@ -88,7 +84,7 @@ public class AuthRestController {
             return ResponseEntity.noContent().build();
         }
 
-        throw new AuthenticationCredentialsNotFoundException("User is not authenticated");
+        throw new AuthenticationCredentialsNotFoundException("Username not found");
     }
 
 

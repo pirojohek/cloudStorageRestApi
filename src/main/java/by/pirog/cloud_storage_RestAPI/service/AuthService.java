@@ -1,5 +1,6 @@
 package by.pirog.cloud_storage_RestAPI.service;
 
+import by.pirog.cloud_storage_RestAPI.exception.UsernameAlreadyExistsException;
 import by.pirog.cloud_storage_RestAPI.storage.entity.UserEntity;
 import by.pirog.cloud_storage_RestAPI.storage.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +19,10 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
 
     public UserEntity signUp(String username, String password){
         if (userRepository.existsByUsername(username)){
-            throw new UsernameNotFoundException(username);
+            throw new UsernameAlreadyExistsException("Username %s is already exists");
         }
 
         UserEntity userEntity = new UserEntity();

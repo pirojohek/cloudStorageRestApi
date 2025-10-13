@@ -7,6 +7,7 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
@@ -28,6 +29,7 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
         problemDetail.setProperty("path", request.getServletPath());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
+
     // 400
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ProblemDetail> handleBadRequestException(BadRequestException ex, HttpServletRequest request) {
@@ -36,6 +38,27 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
         problemDetail.setDetail(ex.getMessage());
         problemDetail.setProperty("path", request.getServletPath());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+    // 500 - неизвестная ошибка
+    @ExceptionHandler(UnknownException.class)
+    public ResponseEntity<ProblemDetail> handleUnknownException(UnknownException ex, HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        problemDetail.setTitle("Internal Server Error");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setProperty("path", request.getServletPath());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problemDetail);
+    }
+
+    // попытка выполнения действия, требующего требующее аутентификации, но пользователь
+    // не предоставил или не имеет действительных учетных данных
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleAuthenticationCredentialsNotFoundException(AuthenticationCredentialsNotFoundException ex,
+                                                                                          HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED.value());
+        problemDetail.setTitle("Access Denied");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setProperty("path", request.getServletPath());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
     // 409 - username занят
@@ -59,6 +82,16 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
                 ex.getAllErrors().stream().map(ObjectError::getDefaultMessage).toList());
         problemDetail.setProperty("path", request.getServletPath());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleResourceNotFoundException(ResourceNotFoundException ex,
+                                                                         HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND.value());
+        problemDetail.setTitle("Resource Not Found");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setProperty("path", request.getServletPath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
 
