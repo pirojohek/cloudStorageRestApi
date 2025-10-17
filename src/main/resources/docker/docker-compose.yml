@@ -1,20 +1,52 @@
-version: '3.8'
 
 services:
   minio:
     image: minio/minio:latest
     container_name: minio
     ports:
-      - "9100:9000"   # 9100 на хосте → 9000 в контейнере
-      - "9101:9001"   # 9101 на хосте → 9001 в контейнере
+      - "9100:9000"
+      - "9101:9001"
     environment:
       MINIO_ROOT_USER: myuser
       MINIO_ROOT_PASSWORD: mypassword
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: r
+    ports:
+      - "61379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: users_storage
+    ports:
+      - "54123:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
 
 volumes:
   minio-data:
+  redis-data:
+  postgres-data:
+
+networks:
+  backend:
+    driver: bridge
 
 
