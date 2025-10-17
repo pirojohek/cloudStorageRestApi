@@ -34,8 +34,11 @@ public class SecurityConfig {
                 })
                 .userDetailsService(userDetailsService)
                 .sessionManagement(session -> session
-                        .maximumSessions(1)
+                        .maximumSessions(5)
                         .maxSessionsPreventsLogin(false))
+                .securityContext(securityContext -> securityContext
+                        .requireExplicitSave(false)
+                )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex

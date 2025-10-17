@@ -1,15 +1,26 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:55123/cloud-storage
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://localhost:54123/users_storage
+    username: myuser
+    password: mypassword
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-  web:
-    resources:
-      add-mappings: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+
+  data:
+    redis:
+      host: localhost
+      port: 61379
+      password: ""
+  session:
+    store-type: redis
+    timeout: 30m
 
 
 minio:
