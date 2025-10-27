@@ -17,7 +17,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: r
+    container_name: redis
     ports:
       - "61379:6379"
     volumes:
@@ -26,7 +26,7 @@ services:
       - backend
 
   postgres:
-    image: postgres:16
+    image: postgres:16.2
     container_name: postgres
     restart: always
     environment:
