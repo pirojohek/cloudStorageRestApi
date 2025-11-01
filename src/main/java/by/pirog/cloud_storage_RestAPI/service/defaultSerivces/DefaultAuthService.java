@@ -1,13 +1,10 @@
-package by.pirog.cloud_storage_RestAPI.service;
+package by.pirog.cloud_storage_RestAPI.service.defaultSerivces;
 
-import by.pirog.cloud_storage_RestAPI.exception.UsernameAlreadyExistsException;
+import by.pirog.cloud_storage_RestAPI.exception.customExceptions.UsernameAlreadyExistsException;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.AuthService;
 import by.pirog.cloud_storage_RestAPI.storage.entity.UserEntity;
 import by.pirog.cloud_storage_RestAPI.storage.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +12,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class DefaultAuthService implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

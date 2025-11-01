@@ -1,11 +1,9 @@
 package by.pirog.cloud_storage_RestAPI.controller;
 
-
+import by.pirog.cloud_storage_RestAPI.dto.ResponseUserSignUpDTO;
 import by.pirog.cloud_storage_RestAPI.dto.UserSignInDTO;
 import by.pirog.cloud_storage_RestAPI.dto.UserSignUpDTO;
-import by.pirog.cloud_storage_RestAPI.service.AuthService;
-import by.pirog.cloud_storage_RestAPI.storage.entity.UserEntity;
-import io.minio.MinioClient;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -49,18 +44,20 @@ public class AuthRestController {
         }
 
         authService.signUp(user.username(), user.password());
-        authenticateAndSetSession(user.username(), user.password(),  request);
+        authenticateAndSetSession(user.username(), user.password(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("username", user.username()));
+                .body(ResponseUserSignUpDTO.builder()
+                        .username(user.username())
+                        .build());
     }
 
     @PostMapping("/sign-in")
     public ResponseEntity<Void> signIn(@Valid @RequestBody UserSignInDTO user, HttpServletRequest request,
-                                    BindingResult bindingResult) throws BindException {
+                                       BindingResult bindingResult) throws BindException {
 
         if (bindingResult.hasErrors()) {
-            if (bindingResult instanceof BindException exception){
+            if (bindingResult instanceof BindException exception) {
                 throw exception;
             } else {
                 throw new BindException(bindingResult);
