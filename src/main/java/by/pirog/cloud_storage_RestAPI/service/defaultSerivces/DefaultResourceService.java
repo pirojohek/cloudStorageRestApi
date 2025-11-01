@@ -1,16 +1,17 @@
-package by.pirog.cloud_storage_RestAPI.service;
+package by.pirog.cloud_storage_RestAPI.service.defaultSerivces;
 
 import by.pirog.cloud_storage_RestAPI.dto.ResponseFileDTO;
-import by.pirog.cloud_storage_RestAPI.exception.ResourceNotFoundException;
-import by.pirog.cloud_storage_RestAPI.exception.UnknownException;
+import by.pirog.cloud_storage_RestAPI.exception.customExceptions.BadRequestException;
+import by.pirog.cloud_storage_RestAPI.exception.customExceptions.ResourceNotFoundException;
+import by.pirog.cloud_storage_RestAPI.exception.customExceptions.UnknownException;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.MinioService;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.ResourceService;
 import by.pirog.cloud_storage_RestAPI.utils.CustomUserDetails;
 import io.minio.*;
-import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,8 @@ import java.util.zip.ZipOutputStream;
 @Service
 @RequiredArgsConstructor
 public class DefaultResourceService implements ResourceService {
-    private final MinioClient minioClient;
+
+    private final MinioService minioService;
 
     @Value("${minio.bucket}")
     private String bucket;
@@ -42,20 +44,14 @@ public class DefaultResourceService implements ResourceService {
     String zipName = "data.zip";
 
     @Override
-    public ResponseFileDTO getResourceInfo(String path) throws Exception {
+    public ResponseFileDTO getResourceInfo(String path) {
         String userResource = (path == null || path.isEmpty()) ?
                     getUserFolder() :
                 getUserFolder() + URLDecoder
                         .decode(path.replaceFirst("^/+", ""), StandardCharsets.UTF_8);
 
         if (userResource.endsWith("/")) {
-            boolean exists = minioClient.listObjects(
-                    ListObjectsArgs.builder()
-                            .bucket(bucket)
-                            .prefix(userResource)
-                            .recursive(false)
-                            .build()
-            ).iterator().hasNext();
+            boolean exists = this.minioService.isFolderExists(bucket, userResource);
 
             if (!exists) {
                 throw new ResourceNotFoundException("Resource %s not found".formatted(path));
@@ -64,17 +60,12 @@ public class DefaultResourceService implements ResourceService {
             return ResponseFileDTO.builder()
                     .path(userResource.substring(getUserFolder().length()))
                     .name(path != null ? path.substring(path.lastIndexOf("/") + 1) : "/")
-                    .size(getSizeFolder(userResource))
+                    .size(this.minioService.getSizeFolder(bucket, userResource))
                     .type("DIRECTORY")
                     .build();
         }
         try {
-            StatObjectResponse response = minioClient.statObject(
-                    StatObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(userResource)
-                            .build()
-            );
+            StatObjectResponse response = this.minioService.getStatObject(bucket, userResource);
 
             return ResponseFileDTO.builder()
                     .path(userResource)
@@ -88,48 +79,16 @@ public class DefaultResourceService implements ResourceService {
         }
     }
 
-    public void deleteResource(String path) throws BadRequestException {
+    public void deleteResource(String path){
         String userResource = (path == null || path.isEmpty()) ?
                 getUserFolder() :
                 getUserFolder() + URLDecoder
                         .decode(path.replaceFirst("^/+", ""), StandardCharsets.UTF_8);
 
-        Iterable<Result<Item>> results = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(bucket)
-                        .prefix(userResource)
-                        .recursive(true)
-                        .build()
-        );
+        Iterable<Result<Item>> results =
+                this.minioService.getListObjectsByPrefix(bucket, userResource);
 
-        List<String> objectNames = StreamSupport.stream(results.spliterator(), false)
-                .map(r -> {
-                    try {
-                        return r.get().objectName();
-                    } catch (Exception e) {
-                        throw new UnknownException("Failed to delete object");
-                    }
-                })
-                .toList();
-
-        if (objectNames.isEmpty()) {
-            throw new ResourceNotFoundException("Folder or file does not exist");
-        }
-
-        for (String objectName : objectNames) {
-            try {
-                log.info("Deleting object: {}", objectName);
-                minioClient.removeObject(
-                        RemoveObjectArgs.builder()
-                                .bucket(bucket)
-                                .object(objectName)
-                                .build()
-                );
-                log.info("Successfully deleted: {}", objectName);
-            } catch (Exception e) {
-                throw new UnknownException("Failed to delete object");
-            }
-        }
+        this.minioService.deleteObjectsByResultItems(bucket, results);
     }
 
     @Override
@@ -145,14 +104,7 @@ public class DefaultResourceService implements ResourceService {
                 String contentType = file.getContentType() != null
                         ? file.getContentType() : "application/octet-stream";
 
-                minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(bucket)
-                                .object(objectName)
-                                .stream(inputStream, file.getSize(), -1)
-                                .contentType(contentType)
-                                .build()
-                );
+                this.minioService.putObjectToFolder(bucket, objectName, inputStream, file.getSize(), contentType);
 
                 responseFileDTOList.add(ResponseFileDTO.builder()
                         .name(file.getName())
@@ -174,24 +126,15 @@ public class DefaultResourceService implements ResourceService {
                 getUserFolder() : getUserFolder() + URLDecoder
                 .decode(path.replaceFirst("^/+", ""), StandardCharsets.UTF_8);
 
-        var resources = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(bucket)
-                        .prefix(totalPath)
-                        .recursive(true)
-                        .build()
-        );
+        Iterable<Result<Item>> resources =
+                this.minioService.getListObjectsByPrefix(bucket, totalPath);
 
         if (!resources.iterator().hasNext()) {
             throw new ResourceNotFoundException("Resource not found");
         }
 
         if (!totalPath.endsWith("/")) {
-            try (InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(totalPath)
-                            .build())) {
+            try (InputStream stream = this.minioService.getInputStreamObject(bucket, totalPath)) {
 
                 response.setContentType("application/octet-stream");
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -219,8 +162,7 @@ public class DefaultResourceService implements ResourceService {
                     continue;
                 }
 
-                try (InputStream inputStream = minioClient.getObject(
-                        GetObjectArgs.builder().bucket(bucket).object(objectName).build())) {
+                try (InputStream inputStream = this.minioService.getInputStreamObject(bucket, objectName)) {
                     zipOut.putNextEntry(new ZipEntry(relativeName));
                     inputStream.transferTo(zipOut);
                     zipOut.closeEntry();
@@ -229,7 +171,7 @@ public class DefaultResourceService implements ResourceService {
             zipOut.finish();
             response.flushBuffer();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            throw new UnknownException("Failed to download resource");
         }
     }
 
@@ -240,32 +182,24 @@ public class DefaultResourceService implements ResourceService {
 
 
     @Override
-    public List<ResponseFileDTO> searchResource(String query) throws Exception {
-        if (query.equals("/") || query.isEmpty()) {
-            throw new BadRequestException("inValid Path");
+    public List<ResponseFileDTO> searchResource(String path)  {
+        if (path.equals("/") || path.isEmpty()) {
+            throw new BadRequestException("Path is empty or null");
         }
 
         String userFolder = getUserFolder();
 
-        Iterable<Result<Item>> items = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(bucket)
-                        .prefix(userFolder)
-                        .recursive(true)
-                        .build()
-        );
+        Iterable<Result<Item>> items = this.minioService.getListObjectsByPrefix(bucket, userFolder);
 
         List<ResponseFileDTO> result = StreamSupport.stream(items.spliterator(), false).filter(item ->{
             try {
                 String[] splitPath = item.get().objectName().split("/");
 
                 return splitPath[splitPath.length - 1].equals("/") ?
-                        splitPath[splitPath.length - 2].contains(query) : splitPath[splitPath.length - 1].equals(query);
+                        splitPath[splitPath.length - 2].contains(path) : splitPath[splitPath.length - 1].equals(path);
             } catch (Exception e) {
-                e.printStackTrace();
                 return false;
             }
-
         }).map(itemResult -> {
             try{
                 Item item = itemResult.get();
@@ -279,25 +213,11 @@ public class DefaultResourceService implements ResourceService {
                         .type(splitPath[splitPath.length - 1].equals("/") ? "DIRECTORY" : "FILE")
                         .build();
             } catch (Exception e){
-                e.printStackTrace();
                 return null;
             }
         }).filter(Objects::nonNull)
                 .toList();
         return result;
-    }
-
-    private Long getSizeFolder(String path) throws Exception{
-        Iterable<Result<Item>> results = minioClient.listObjects(
-                ListObjectsArgs.builder().bucket(bucket)
-                        .prefix(path).recursive(true).build()
-        );
-        long totalSize = 0;
-        for (Result<Item> result : results) {
-            Item item = result.get();
-            totalSize+= item.size();
-        }
-        return totalSize;
     }
 
     private String getUserFolder(){
