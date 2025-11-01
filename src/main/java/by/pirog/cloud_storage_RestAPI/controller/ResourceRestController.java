@@ -2,7 +2,7 @@ package by.pirog.cloud_storage_RestAPI.controller;
 
 
 import by.pirog.cloud_storage_RestAPI.dto.ResponseFileDTO;
-import by.pirog.cloud_storage_RestAPI.service.DefaultResourceService;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.ResourceService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -21,16 +19,16 @@ import java.util.List;
 @RequestMapping("resource")
 public class ResourceRestController {
 
-    private final DefaultResourceService fileService;
+    private final ResourceService fileService;
 
     @GetMapping
-    public ResponseEntity<ResponseFileDTO> getResourceInfo(@RequestParam(name="path", required=false) String path) throws Exception {
+    public ResponseEntity<ResponseFileDTO> getResourceInfo(@RequestParam(name="path", required=false) String path) {
         ResponseFileDTO response = fileService.getResourceInfo(path);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteResource(@RequestParam(name="path", required=false) String path) throws Exception {
+    public ResponseEntity<Void> deleteResource(@RequestParam(name="path", required=false) String path) {
         fileService.deleteResource(path);
         return ResponseEntity.noContent().build();
     }
@@ -42,8 +40,9 @@ public class ResourceRestController {
     }
 
 
+
     @GetMapping("/search")
-    public ResponseEntity<List<ResponseFileDTO>> searchResource(@RequestParam(name="query") String query) throws Exception {
+    public ResponseEntity<List<ResponseFileDTO>> searchResource(@RequestParam(name="query") String query) {
         List<ResponseFileDTO> response = fileService.searchResource(query);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
