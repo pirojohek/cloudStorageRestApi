@@ -71,6 +71,12 @@ public class DefaultMinioService implements MinioService {
     }
 
     @Override
+    public Iterable<Result<Item>> getListObjectsByPrefixNotRecursive(String bucket, String prefix) {
+        return minioClient.listObjects(
+                ListObjectsArgs.builder().bucket(bucket).prefix(prefix).build());
+    }
+
+    @Override
     public void deleteObjectsByResultItems(String bucket, Iterable<Result<Item>> objects) {
         List<DeleteObject> objectsToDelete = StreamSupport.stream(objects.spliterator(), false)
                 .map(r -> {

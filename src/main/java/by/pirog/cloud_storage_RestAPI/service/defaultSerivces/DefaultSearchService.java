@@ -1,7 +1,8 @@
-package by.pirog.cloud_storage_RestAPI.service;
+package by.pirog.cloud_storage_RestAPI.service.defaultSerivces;
 
 import by.pirog.cloud_storage_RestAPI.dto.ResponseFileDTO;
-import by.pirog.cloud_storage_RestAPI.exception.UnknownException;
+import by.pirog.cloud_storage_RestAPI.exception.customExceptions.UnknownException;
+import by.pirog.cloud_storage_RestAPI.service.interfaces.SearchService;
 import by.pirog.cloud_storage_RestAPI.utils.CustomUserDetails;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
