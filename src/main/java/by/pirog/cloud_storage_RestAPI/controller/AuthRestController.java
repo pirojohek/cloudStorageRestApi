@@ -43,13 +43,11 @@ public class AuthRestController {
             }
         }
 
-        authService.signUp(user.username(), user.password());
+        ResponseUserSignUpDTO response = authService.signUp(user.username(), user.password());
         authenticateAndSetSession(user.username(), user.password(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ResponseUserSignUpDTO.builder()
-                        .username(user.username())
-                        .build());
+                .body(response);
     }
 
     @PostMapping("/sign-in")
